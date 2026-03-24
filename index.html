@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html>
+<body style="margin:0;background:#050505;font-family:'Segoe UI',sans-serif;color:#fff;">
+
+<!-- 🔥 TITLE -->
+<div style="
+padding:12px;
+font-weight:900;
+font-size:13px;
+letter-spacing:2px;
+text-transform:uppercase;
+color:#ffae00;
+border-bottom:2px solid #ff3c00;
+text-shadow:0 0 10px #ff3c00;
+">
+🔥 Latest Recruits
+</div>
+
+<!-- 🔥 SCROLL CONTAINER -->
+<div id="scrollBox" style="
+height:280px;
+overflow-y:auto;
+scrollbar-width:thin;
+background:linear-gradient(to bottom,#0a0a0a,#000);
+padding:8px;
+">
+<div id="members">Loading...</div>
+</div>
+
+<script>
+const club = "group-a162138be57d83c3500191b84a4b325d";
+
+async function loadMembers(){
+    try{
+        const res = await fetch(`https://api.chess.com/pub/club/${club}/members`);
+        const data = await res.json();
+        let latest = (data.weekly || []).slice(0,5); // only latest 5
+
+        let container = document.getElementById("members");
+        container.innerHTML = "";
+
+        for(let i=0;i<latest.length;i++){
+            let u = latest[i];
+            let isFirst = i === 0;
+
+            let div = document.createElement("div");
+            div.style.cssText = `
+                display:flex;
+                align-items:center;
+                gap:10px;
+                padding:10px;
+                margin-bottom:6px;
+                border-radius:10px;
+                border:1px solid rgba(255,60,0,0.15);
+                background:rgba(0,0,0,0.4);
+                color:#cfcfcf;
+                transition:all 0.25s ease;
+            `;
+            container.appendChild(div);
+
+            // hover glow
+            div.onmouseover = () => {
+                div.style.color = "#ffae00";
+                div.style.transform = "scale(1.03)";
+                div.style.boxShadow = "0 0 20px rgba(255,60,0,0.6), 0 0 40px rgba(255,120,0,0.4)";
+                div.style.border = "1px solid #ff3c00";
+            };
+            div.onmouseout = () => {
+                div.style.color = "#cfcfcf";
+                div.style.transform = "scale(1)";
+                div.style.boxShadow = "none";
+                div.style.border = "1px solid rgba(255,60,0,0.15)";
+            };
+
+            // fetch player info
+            try{
+                let profile = await fetch(`https://api.chess.com/pub/player/${u.username}`).then(r=>r.json());
+                let stats = await fetch(`https://api.chess.com/pub/player/${u.username}/stats`).then(r=>r.json());
+                let rating = stats.chess_rapid ? stats.chess_rapid.last.rating : "—";
+                let online = profile.status === "online";
+                let avatar = profile.avatar || "https://www.chess.com/bundles/web/images/noavatar_l.84a92436.gif";
+
+                div.innerHTML = `
+                    <img src="${avatar}" style="width:34px;height:34px;border-radius:50%;box-shadow:0 0 10px rgba(255,60,0,0.5);">
+                    <div style="display:flex;flex-direction:column;">
+                        <a href="https://www.chess.com/member/${u.username}" target="_blank"
+                        style="text-decoration:none;color:inherit;font-weight:700;">${u.username}</a>
+                        <div style="font-size:11px;color:#888;">
+                            ${online ? "🟢 Online" : "⚫ Offline"} • Rapid: ${rating}
+                        </div>
+                    </div>
+                    ${isFirst ? `<span style="
+                        margin-left:auto;
+                        font-size:10px;
+                        background:#ff3c00;
+                        padding:3px 8px;
+                        border-radius:6px;
+                        font-weight:900;
+                        box-shadow:0 0 12px #ff3c00;
+                    ">NEW</span>` : ""}
+                `;
+            }catch(e){
+                div.innerHTML = `<div style="color:red;">Error loading ${u.username}</div>`;
+            }
+        }
+
+    }catch(e){
+        document.getElementById("members").innerHTML="<div style='color:red;padding:10px;'>FAILED TO LOAD</div>";
+    }
+}
+
+loadMembers();
+
+
+// 🔥 AUTO SCROLL LOGIC
+let scrollBox = document.getElementById("scrollBox");
+let autoScrolling = true;
+let idleTimer = null;
+
+function autoScroll(){
+    if(autoScrolling){
+        scrollBox.scrollTop += 0.3;
+        if(scrollBox.scrollTop >= scrollBox.scrollHeight - scrollBox.clientHeight){
+            scrollBox.scrollTop = 0;
+        }
+    }
+    requestAnimationFrame(autoScroll);
+}
+autoScroll();
+
+// stop scrolling when user scrolls
+scrollBox.addEventListener("scroll", () => {
+    autoScrolling = false;
+    clearTimeout(idleTimer);
+    idleTimer = setTimeout(()=>{
+        autoScrolling = true;
+    }, 3000);
+});
+</script>
+
+</body>
+</html>
